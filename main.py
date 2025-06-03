@@ -29,8 +29,14 @@ st.title("CRA Filing Deadline Calculator for First Nations")
 filing_code = st.selectbox("Select Filing Code", ["PSB", "Code 1A", "Code 8"])
 filer_status = st.selectbox("Filer Status", ["Filer", "Non-Filer"])
 frequency = st.selectbox("Select Filing Frequency", ["Monthly", "Quarterly", "Annually"])
-fiscal_start = st.date_input("Select Fiscal Year Start Date", value=datetime(2025, 4, 1))
-start_year = st.selectbox("Select Starting Year", [2024, 2025, 2026])
+
+# Add a dropdown for selecting Fiscal Year Start Date between 2015 and 2100
+fiscal_start = st.date_input("Select Fiscal Year Start Date", value=datetime(2025, 4, 1), min_value=datetime(2015, 1, 1), max_value=datetime(2100, 12, 31))
+
+start_year = st.selectbox("Select Starting Year", [i for i in range(2015, 2101)])
+
+# Add a dropdown for Today's Date
+today_date = st.date_input("Select Today's Date", value=datetime.today())
 
 # Button to calculate the deadlines
 if st.button("Calculate Deadlines"):
@@ -54,11 +60,14 @@ if st.button("Calculate Deadlines"):
         # Deadline for filing is 3 months after the period end
         deadline = end + timedelta(days=90)
 
+        # Calculate latest allowed filing date by comparing it to today's date
+        latest_allowed_date = max(deadline, today_date)  # If today is past the deadline, show today's date instead
+        
         periods.append({
             "Period Start": format_date(start),
             "Period End": format_date(end),
             "Filing Deadline": format_date(deadline),
-            "Latest Allowed Filing Date": format_date(deadline)
+            "Latest Allowed Filing Date": format_date(latest_allowed_date)
         })
 
         # Update current start for the next period
@@ -69,6 +78,7 @@ if st.button("Calculate Deadlines"):
     st.write(f"**Filing Code:** {filing_code}")
     st.write(f"**Filer Status:** {filer_status}")
     st.write(f"**Filing Frequency:** {frequency}")
+    st.write(f"**Today's Date:** {today_date.strftime('%Y-%m-%d')}")
     
     # Display results in a table
     df = pd.DataFrame(periods)
