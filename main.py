@@ -1,3 +1,7 @@
+import streamlit as st
+
+# HTML & JavaScript code
+html_code = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,3 +174,11 @@
   </script>
 </body>
 </html>
+"""
+
+# Set up the Streamlit app
+st.title("CRA Filing Deadline Calculator")
+
+# Display HTML & JS using markdown
+st.markdown(html_code, unsafe_allow_html=True)
+
