@@ -4,7 +4,7 @@ import pandas as pd
 
 # Function to add months to a date
 def add_months(date, months):
-    # Calculate the new year and month
+    # Calculate the new month and year
     new_month = date.month + months
     new_year = date.year + new_month // 12
     new_month = new_month % 12
@@ -13,9 +13,9 @@ def add_months(date, months):
         new_year -= 1
 
     # Handle the case where the new month has fewer days than the start month
-    last_day_of_new_month = (datetime(new_year, new_month + 1, 1) - timedelta(days=1)).day
+    last_day_of_new_month = (datetime(new_year, new_month % 12 + 1, 1) - timedelta(days=1)).day
     day = min(date.day, last_day_of_new_month)
-    
+
     return datetime(new_year, new_month, day)
 
 # Function to format date as yyyy-mm-dd
