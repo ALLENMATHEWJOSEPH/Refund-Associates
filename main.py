@@ -60,6 +60,10 @@ if st.button("Calculate Deadlines"):
         # Deadline for filing is 3 months after the period end
         deadline = end + timedelta(days=90)
 
+        # Ensure both dates are datetime objects
+        today_date = datetime(today_date.year, today_date.month, today_date.day)  # Convert if needed
+        deadline = datetime(deadline.year, deadline.month, deadline.day)  # Ensure deadline is a datetime object
+        
         # Calculate latest allowed filing date by comparing it to today's date
         latest_allowed_date = max(deadline, today_date)  # If today is past the deadline, show today's date instead
         
