@@ -1,12 +1,21 @@
 import streamlit as st
 from datetime import datetime, timedelta
+import pandas as pd
 
 # Function to add months to a date
 def add_months(date, months):
+    # Calculate the new year and month
     new_month = date.month + months
     new_year = date.year + new_month // 12
     new_month = new_month % 12
-    day = min(date.day, [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][new_month-1])  # Handle end of month
+    if new_month == 0:
+        new_month = 12
+        new_year -= 1
+
+    # Handle the case where the new month has fewer days than the start month
+    last_day_of_new_month = (datetime(new_year, new_month + 1, 1) - timedelta(days=1)).day
+    day = min(date.day, last_day_of_new_month)
+    
     return datetime(new_year, new_month, day)
 
 # Function to format date as yyyy-mm-dd
@@ -72,4 +81,3 @@ if st.button("Calculate Deadlines"):
         file_name="filing_deadlines.csv",
         mime="text/csv"
     )
-
