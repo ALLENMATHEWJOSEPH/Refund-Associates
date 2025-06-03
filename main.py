@@ -1,184 +1,75 @@
 import streamlit as st
+from datetime import datetime, timedelta
 
-# HTML & JavaScript code
-html_code = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CRA Filing Deadline Calculator (First Nations)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-      background: #f4f4f4;
-      color: #333;
-    }
-    h1 {
-      color: #004080;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-    select, input[type="date"] {
-      padding: 5px;
-      margin-bottom: 15px;
-      width: 250px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 10px;
-      text-align: center;
-    }
-    button {
-      padding: 10px 15px;
-      background: #0078d4;
-      color: white;
-      border: none;
-      margin-top: 15px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #005fa3;
-    }
-  </style>
-</head>
-<body>
-  <h1>CRA Filing Deadline Calculator</h1>
+# Function to add months to a date
+def add_months(date, months):
+    new_month = date.month + months
+    new_year = date.year + new_month // 12
+    new_month = new_month % 12
+    day = min(date.day, [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][new_month-1])  # Handle end of month
+    return datetime(new_year, new_month, day)
 
-  <label for="filingCode">Filing Code:</label>
-  <select id="filingCode">
-    <option value="PSB">PSB</option>
-    <option value="1A">Code 1A</option>
-    <option value="8">Code 8</option>
-  </select>
+# Function to format date as yyyy-mm-dd
+def format_date(date):
+    return date.strftime("%Y-%m-%d")
 
-  <label for="filerStatus">Filer Status:</label>
-  <select id="filerStatus">
-    <option value="filer">Filer</option>
-    <option value="non-filer">Non-Filer</option>
-  </select>
+# Streamlit Interface
+st.title("CRA Filing Deadline Calculator for First Nations")
 
-  <label for="frequency">Filing Frequency:</label>
-  <select id="frequency">
-    <option value="monthly">Monthly</option>
-    <option value="quarterly">Quarterly</option>
-    <option value="annually">Annually</option>
-  </select>
+# Input fields
+filing_code = st.selectbox("Select Filing Code", ["PSB", "Code 1A", "Code 8"])
+filer_status = st.selectbox("Filer Status", ["Filer", "Non-Filer"])
+frequency = st.selectbox("Select Filing Frequency", ["Monthly", "Quarterly", "Annually"])
+fiscal_start = st.date_input("Select Fiscal Year Start Date", value=datetime(2025, 4, 1))
+start_year = st.selectbox("Select Starting Year", [2024, 2025, 2026])
 
-  <label for="fiscalStart">Fiscal Year Start Date:</label>
-  <input type="date" id="fiscalStart" value="2025-04-01" />
+# Button to calculate the deadlines
+if st.button("Calculate Deadlines"):
+    # Convert input fiscal start to a date
+    fiscal_start_date = datetime(fiscal_start.year, fiscal_start.month, fiscal_start.day)
+    
+    # Logic to calculate the periods and deadlines
+    periods = []
+    period_count = 12 if frequency == "Monthly" else 4 if frequency == "Quarterly" else 1
+    current_start = fiscal_start_date.replace(year=start_year)
+    
+    for i in range(period_count):
+        start = current_start
+        if frequency == "Monthly":
+            end = add_months(start, 1) - timedelta(days=1)
+        elif frequency == "Quarterly":
+            end = add_months(start, 3) - timedelta(days=1)
+        else:  # Annually
+            end = start.replace(year=start.year + 1) - timedelta(days=1)
 
-  <label for="startYear">Starting Year:</label>
-  <select id="startYear">
-    <option value="2024">2024</option>
-    <option value="2025" selected>2025</option>
-    <option value="2026">2026</option>
-  </select>
+        # Deadline for filing is 3 months after the period end
+        deadline = end + timedelta(days=90)
 
-  <br/>
-  <button onclick="calculateDeadlines()">Calculate Deadlines</button>
+        periods.append({
+            "Period Start": format_date(start),
+            "Period End": format_date(end),
+            "Filing Deadline": format_date(deadline),
+            "Latest Allowed Filing Date": format_date(deadline)
+        })
 
-  <table id="resultsTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Period Start</th>
-        <th>Period End</th>
-        <th>Filing Deadline</th>
-        <th>Latest Allowed Filing Date</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <script>
-    function addMonths(date, months) {
-      const d = new Date(date);
-      d.setMonth(d.getMonth() + months);
-      return d;
-    }
-
-    function formatDate(date) {
-      return date.toISOString().split('T')[0];
-    }
-
-    function calculateDeadlines() {
-      const frequency = document.getElementById("frequency").value;
-      const fiscalStart = new Date(document.getElementById("fiscalStart").value);
-      const startYear = parseInt(document.getElementById("startYear").value);
-      const filerStatus = document.getElementById("filerStatus").value;
-
-      const table = document.getElementById("resultsTable");
-      const tbody = table.querySelector("tbody");
-      tbody.innerHTML = "";
-
-      let periods = [];
-      let count = frequency === "monthly" ? 12 : frequency === "quarterly" ? 4 : 1;
-      let currentStart = new Date(fiscalStart);
-      currentStart.setFullYear(startYear);
-
-      for (let i = 0; i < count; i++) {
-        let start = new Date(currentStart);
-        let end;
-
-        if (frequency === "monthly") {
-          end = addMonths(start, 1);
-          end.setDate(end.getDate() - 1);
-        } else if (frequency === "quarterly") {
-          end = addMonths(start, 3);
-          end.setDate(end.getDate() - 1);
-        } else {
-          end = new Date(start);
-          end.setFullYear(end.getFullYear() + 1);
-          end.setDate(end.getDate() - 1);
-        }
-
-        let deadline = new Date(end);
-        deadline.setMonth(deadline.getMonth() + 3);
-
-        periods.push({
-          periodStart: formatDate(start),
-          periodEnd: formatDate(end),
-          deadline: formatDate(deadline),
-          latest: formatDate(deadline) // Can extend logic for late filing rules if needed
-        });
-
-        currentStart = new Date(end);
-        currentStart.setDate(currentStart.getDate() + 1);
-      }
-
-      periods.forEach(p => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${p.periodStart}</td>
-          <td>${p.periodEnd}</td>
-          <td>${p.deadline}</td>
-          <td>${p.latest}</td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      table.style.display = "table";
-    }
-  </script>
-</body>
-</html>
-"""
-
-# Set up the Streamlit app
-st.title("CRA Filing Deadline Calculator")
-
-# Display HTML & JS using markdown
-st.markdown(html_code, unsafe_allow_html=True)
+        # Update current start for the next period
+        current_start = end + timedelta(days=1)
+    
+    # Show the results in a table
+    st.write("### Filing Periods and Deadlines")
+    st.write(f"**Filing Code:** {filing_code}")
+    st.write(f"**Filer Status:** {filer_status}")
+    st.write(f"**Filing Frequency:** {frequency}")
+    
+    # Display results in a table
+    df = pd.DataFrame(periods)
+    st.write(df)
+    
+    # Optionally: Provide CSV download link
+    st.download_button(
+        label="Download CSV",
+        data=df.to_csv(index=False),
+        file_name="filing_deadlines.csv",
+        mime="text/csv"
+    )
 
